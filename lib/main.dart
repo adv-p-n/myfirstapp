@@ -18,7 +18,8 @@ void main() {
     home: const HomePage(),
     routes: {
       '/login/': (context) => const LoginView(),
-      '/register/': (context) => const RegisterView()
+      '/register/': (context) => const RegisterView(),
+      '/notes/': (context) => const MyNotesView(),
     },
   ));
 }
@@ -39,7 +40,7 @@ class HomePage extends StatelessWidget {
             final user = FirebaseAuth.instance.currentUser;
             if (user != null) {
               if (user.emailVerified) {
-                print("Verified User");
+                dev.log("Verified User");
               } else {
                 return const VerifyEmailView();
               }
@@ -80,7 +81,6 @@ class _MyNotesViewState extends State<MyNotesView> {
                       .pushNamedAndRemoveUntil('/login/', (route) => false);
                 }
             }
-            ;
           }, itemBuilder: (context) {
             return const [
               PopupMenuItem<MenuActions>(

@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as dev show log;
 
+import 'package:myfirstapp/constants/routes.dart';
+import 'package:myfirstapp/utilities/show_error_dialog.dart';
+
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
 
@@ -57,18 +60,40 @@ class _RegisterViewState extends State<RegisterView> {
               final password = _password.text;
 
               try {
-                final userCredential = await FirebaseAuth.instance
-                    .createUserWithEmailAndPassword(
-                        email: email, password: password);
+                final userCredential =
+                    await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                  email: email,
+                  password: password,
+                );
                 dev.log(userCredential.toString());
               } on FirebaseAuthException catch (e) {
-                if (e.code == 'email-already-in-use') {
-                  dev.log('Email already exists.........');
-                } else if (e.code == 'weak-password') {
-                  dev.log("Password is too weeak.........");
-                } else if (e.code == 'invalid-email') {
-                  dev.log("Enter a vaalid Email...........");
+                if (!mounted) {
+                  return;
                 }
+                if (e.code == 'email-already-in-use') {
+                  await showErrorDialog(
+                    context,
+                    'Email already exists.........',
+                  );
+                } else if (e.code == 'weak-password') {
+                  await showErrorDialog(
+                    context,
+                    "Password is too weeak.........",
+                  );
+                } else if (e.code == 'invalid-email') {
+                  await showErrorDialog(
+                    context,
+                    "Enter a vaalid Email...........",
+                  );
+                }
+              } catch (e) {
+                if (!mounted) {
+                  return;
+                }
+                await showErrorDialog(
+                  context,
+                  e.toString(),
+                );
               }
             },
             child: const Text(
@@ -79,7 +104,10 @@ class _RegisterViewState extends State<RegisterView> {
           TextButton(
               onPressed: () {
                 Navigator.pushNamedAndRemoveUntil(
-                    context, '/login/', (route) => false);
+                  context,
+                  loginRoute,
+                  (route) => false,
+                );
               },
               child: const Text('Go back to Login'))
         ],

@@ -65,7 +65,14 @@ class _RegisterViewState extends State<RegisterView> {
                   email: email,
                   password: password,
                 );
+
                 dev.log(userCredential.toString());
+                await FirebaseAuth.instance.currentUser
+                    ?.sendEmailVerification();
+                if (!mounted) {
+                  return;
+                }
+                Navigator.of(context).pushNamed(verifyEmailRoute);
               } on FirebaseAuthException catch (e) {
                 if (!mounted) {
                   return;
@@ -84,6 +91,11 @@ class _RegisterViewState extends State<RegisterView> {
                   await showErrorDialog(
                     context,
                     "Enter a vaalid Email...........",
+                  );
+                } else {
+                  await showErrorDialog(
+                    context,
+                    'Error :${e.code}',
                   );
                 }
               } catch (e) {

@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:myfirstapp/firebase_options.dart';
 import 'package:myfirstapp/services/auth/auth_user.dart';
 import 'package:myfirstapp/services/auth/auth_exceptions.dart';
 import 'package:myfirstapp/services/auth/auth_provider.dart';
@@ -37,7 +39,7 @@ class FirebaseAuthProvider implements AuthProvider {
       } else if (e.code == 'weak-password') {
         throw WeakPasswordAuthException();
       } else if (e.code == 'invalid-email') {
-        throw IvalidEmailAuthException();
+        throw InvalidEmailAuthException();
       } else {
         throw GenericAuthException();
       }
@@ -70,7 +72,7 @@ class FirebaseAuthProvider implements AuthProvider {
       } else if (e.code == 'invalid-credential') {
         throw InvalidCredentialsAuthException();
       } else if (e.code == 'invalid-email') {
-        throw IvalidEmailAuthException();
+        throw InvalidEmailAuthException();
       } else {
         throw GenericAuthException();
       }
@@ -95,5 +97,12 @@ class FirebaseAuthProvider implements AuthProvider {
     if (user != null) {
       await user.sendEmailVerification();
     }
+  }
+
+  @override
+  Future<void> initialize() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   }
 }

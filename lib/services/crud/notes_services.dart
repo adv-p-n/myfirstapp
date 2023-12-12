@@ -1,3 +1,4 @@
+import 'package:myfirstapp/services/crud/crud_exceptions.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -81,7 +82,7 @@ class NoteService {
     }
   }
 
-  Database _getUserOrThrow() {
+  Database _getDatabaseOrThrow() {
     final db = _db;
     if (db == null) {
       throw DatabaseNotOpenException();
@@ -91,7 +92,7 @@ class NoteService {
   }
 
   Future<DatabaseUser> createUser({required String email}) async {
-    final db = _getUserOrThrow();
+    final db = _getDatabaseOrThrow();
     final result = await db.query(
       userTable,
       limit: 1,
@@ -107,31 +108,113 @@ class NoteService {
   }
 
   Future<void> deleteUser({required String email}) async {
-    final db = _getUserOrThrow();
+    final db = _getDatabaseOrThrow();
     final result = await db.query(
       userTable,
       limit: 1,
       where: 'email=?',
       whereArgs: [email.toLowerCase()],
     );
-    if (result.isEmpty) throw UserDoesNotExistsException();
+    if (result.isEmpty) throw CouldNotFindUserException();
     final deleteCount = await db.delete(userTable,
         where: 'email = ?', whereArgs: [email.toLowerCase()]);
     if (deleteCount != 1) throw CouldNotDeleteUserException();
   }
+
+  Future<DatabaseUser> getUser({required String email}) async {
+    final db = _getDatabaseOrThrow();
+    final result = await db.query(
+      userTable,
+      limit: 1,
+      where: 'email = ?',
+      whereArgs: [email.toLowerCase()],
+    );
+    if (result.isEmpty) {
+      throw CouldNotFindUserException();
+    } else {
+      return DatabaseUser.fromRow(result.first);
+    }
+  }
+
+  Future<DatabaseNote> createNote({required DatabaseUser owner}) async {
+    final db = _getDatabaseOrThrow();
+    final user = await getUser(email: owner.email);
+    if (user != owner) {
+      CouldNotFindUserException();
+    }
+    const text = '';
+    final noteId = await db.insert(noteTable, {
+      userIdColumn: owner.id,
+      textColumn: text,
+      isSyncedWithCloudColumn: 1,
+    });
+    final note = DatabaseNote(
+      id: noteId,
+      userId: owner.id,
+      text: text,
+      isSyncedWithCloud: true,
+    );
+    return note;
+  }
+
+  Future<void> deleteNote({required int id}) async {
+    final db = _getDatabaseOrThrow();
+    final result = await db.query(
+      noteTable,
+      limit: 1,
+      where: 'id=?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) throw CouldNotFindNoteException();
+    final deleteCount = await db.delete(
+      noteTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (deleteCount != 1) throw CouldNotDeleteNoteException();
+  }
+
+  Future<int> deleteAllNotes() async {
+    final db = _getDatabaseOrThrow();
+    return await db.delete(noteTable);
+  }
+
+  Future<DatabaseNote> getNote({required int id}) async {
+    final db = _getDatabaseOrThrow();
+    final result = await db.query(
+      noteTable,
+      limit: 1,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) {
+      throw CouldNotFindNoteException();
+    } else {
+      return DatabaseNote.fromRow(result.first);
+    }
+  }
+
+  Future<Iterable<DatabaseNote>> getAllNotes() async {
+    final db = _getDatabaseOrThrow();
+    final notes = await db.query(noteTable);
+    return notes.map((noterow) => DatabaseNote.fromRow(noterow));
+  }
+
+  Future<DatabaseNote> updateNote(
+      {required DatabaseNote note, required String text}) async {
+    final db = _getDatabaseOrThrow();
+    await getNote(id: note.id);
+    final updateCount = await db.update(noteTable, {
+      textColumn: text,
+      isSyncedWithCloudColumn: 0,
+    });
+    if (updateCount == 0) {
+      throw CouldNotUpdateNoteException();
+    } else {
+      return await getNote(id: note.id);
+    }
+  }
 }
-
-class DatabaseAlreadyOpenException implements Exception {}
-
-class UnableToGetPlatformDirectoryException implements Exception {}
-
-class DatabaseNotOpenException implements Exception {}
-
-class UserAlreadyExistsException implements Exception {}
-
-class UserDoesNotExistsException implements Exception {}
-
-class CouldNotDeleteUserException implements Exception {}
 
 const dbName = 'notes.db';
 const noteTable = 'note';

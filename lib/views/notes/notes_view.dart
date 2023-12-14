@@ -69,7 +69,26 @@ class _MyNotesViewState extends State<MyNotesView> {
                   builder: (BuildContext context, AsyncSnapshot snapshot) {
                     switch (snapshot.connectionState) {
                       case ConnectionState.waiting:
-                        return const Text("Waiting for Notes");
+                      case ConnectionState.active:
+                        if (snapshot.hasData) {
+                          final notes = snapshot.data as List<DatabaseNote>;
+                          return ListView.builder(
+                            itemCount: notes.length,
+                            itemBuilder: (context, index) {
+                              final note = notes[index];
+                              return ListTile(
+                                title: Text(
+                                  note.text,
+                                  maxLines: 1,
+                                  softWrap: true,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            },
+                          );
+                        } else {
+                          return const CircularProgressIndicator();
+                        }
                       default:
                         return const CircularProgressIndicator();
                     }

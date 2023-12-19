@@ -11,11 +11,15 @@ class FirebaseCloudStorage {
   FirebaseCloudStorage._sharedInstance();
   factory FirebaseCloudStorage() => _shared;
 
-  void createNewNote({required String ownerUserId}) async {
-    await notes.add({ownerUserIdFieldName: ownerUserId, textFieldName: ''});
+  Future<CloudNote> createNewNote({required String ownerUserId}) async {
+    final document =
+        await notes.add({ownerUserIdFieldName: ownerUserId, textFieldName: ''});
+    final fetchedDocument = await document.get();
+    return CloudNote(
+        documentId: fetchedDocument.id, userId: ownerUserId, text: '');
   }
 
-  void deleteNote({required String documentId}) async {
+  Future<void> deleteNote({required String documentId}) async {
     try {
       await notes.doc(documentId).delete();
     } catch (e) {
@@ -44,10 +48,8 @@ class FirebaseCloudStorage {
       return await notes
           .where(ownerUserIdFieldName, isEqualTo: ownerUserId)
           .get()
-          .then((value) => value.docs.map((doc) => CloudNote(
-              documentId: doc.id,
-              userId: doc.data()[ownerUserIdFieldName] as String,
-              text: doc.data()[textFieldName] as String)));
+          .then(
+              (value) => value.docs.map((doc) => CloudNote.fromSnapshot(doc)));
     } catch (e) {
       throw CouldNotGetAllNotesException();
     }
